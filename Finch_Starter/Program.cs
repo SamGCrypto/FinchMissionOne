@@ -1,12 +1,15 @@
 ﻿using FinchAPI;
 using System;
-using System.Linq.Expressions;
 using System.Threading;
+using System.Runtime;
+using System.Dynamic;
 
-namespace Finch_Starter
+namespace Alarm_System
 {
     class Program
     {
+        private static (int[], int[]) sensorData;
+
         // *************************************************************
         // Application:     Finch Starter Solution
         // Author:          Velis, John E
@@ -51,6 +54,8 @@ namespace Finch_Starter
             {
                 DisplayMainMenu();
                 caseSwitch = GatherInput();
+                Console.WriteLine($"Option {caseSwitch} was selected.");
+                Console.ReadKey();
                 switch (caseSwitch)
                 {
                     case "a":
@@ -72,6 +77,7 @@ namespace Finch_Starter
                         break;
                     case "e":
                         Console.Clear();
+                        AlarmSystemAlert(myFinch);
                         break;
                     case "quit":
                         Console.WriteLine("Thank you for using our robot!");
@@ -132,6 +138,159 @@ namespace Finch_Starter
             //
             myFinch.disConnect();
         }
+        #region VOICE CONTROLLER TEST
+
+
+
+
+        #endregion
+
+
+        #region ALARM SYSTEM
+        private static void AlarmSystemAlert(Finch myFinch)
+        {
+            string optionSelect = null;
+            bool sentryMode = true;
+            int sentrySec = 0;
+            int sentryFrequency = 0;
+            int userChoice = 0;
+            int minMax = 0;
+            int[] dataAmountSentryTakes = new int[userChoice];
+            Console.WriteLine("Alarm System being prepped for arming.");
+            myFinch.wait(5000);
+            do
+            {
+                Console.Clear();
+                DisplayAlarm();
+                optionSelect = Console.ReadLine().ToLower();
+                switch (optionSelect)
+                {
+                    case "a":
+                        sentrySec = SentryTimerSettings();
+                        Console.WriteLine($"{sentrySec} of how many seconds there are.");
+                        Console.ReadKey();
+                        break;
+                    case "b":
+                        sentryFrequency = SentryDataTakenFrequencySettings();
+                        Console.WriteLine($"{sentryFrequency} of how many datapoints will be taken there are.");
+                        Console.ReadKey();
+                        break;
+                    case "c":
+                        userChoice = SentryDataTakenAmount();
+                        Console.WriteLine($"{userChoice} how long the list will be.");
+                        break;
+                    case "d":
+                        
+                        break;
+                    case "e":
+                        if (sentrySec <= 0 || sentryFrequency <= 0 || userChoice <= 0)
+                        {
+                            Console.WriteLine("Error you have entered in a null amount, sentry mode cannot be zero.");
+                        }
+                        else
+                        {
+                            (int[], int[])sensorData = ExecuteSentryMode(sentrySec, sentryFrequency, dataAmountSentryTakes, myFinch);
+                        }
+                        break;
+                    case "quit":
+                        Console.WriteLine("Sentry Mode: Disengaging!");
+                        myFinch.noteOn(500);
+                        myFinch.wait(2000);
+                        myFinch.noteOff();
+                        sentryMode = false;
+                        break;
+                }
+            } while (sentryMode);
+        }
+
+        private static (int[], int[]) ExecuteSentryMode(int sentrySec, int sentryFrequency, int[] dataAmountSentryTakes, Finch myFinch)
+        {
+            bool finished = false;
+            int[] dataAmountSentryTakesRight = new int[dataAmountSentryTakes.Length];
+            (int[], int[]) sensoryData;
+
+            DisplayHeader("Sentry Mode.");
+            Console.WriteLine("sentry mode will begin, press any key to continue.");
+            Console.ReadKey();
+            do
+            {
+                int i = 0;
+                if (i == sentryFrequency)
+                {
+                    finished = true;
+                }
+                else
+                {
+                    dataAmountSentryTakes[i] = myFinch.getLeftLightSensor();
+                    dataAmountSentryTakesRight[i] = myFinch.getRightLightSensor();
+                    myFinch.wait(sentrySec * 1000);
+                    i++;
+                }
+
+            } while (!finished);
+            sensoryData = (dataAmountSentryTakes, dataAmountSentryTakesRight);
+            return sensoryData;
+            }
+
+
+        //
+        //This method will return the size of the list that will be generated.
+        //
+        private static int SentryDataTakenAmount()
+        {
+            bool trueStatement = false;
+            int listSize = 0;
+            Console.Clear();
+            DisplayHeader("\t\tData Amount Taken.");
+            do
+            {
+                Console.WriteLine();
+                Console.WriteLine("Enter in the amount of data you wish to gather.");
+                Console.WriteLine();
+                int.TryParse(Console.ReadLine(), out listSize);
+                if (int.TryParse(Console.ReadLine(), out listSize)== false)
+                {
+                    Console.WriteLine("Error: Please try again.");
+                }
+                if (int.TryParse(Console.ReadLine(), out listSize) == true)
+                {
+                    trueStatement = true;
+                }
+            } while (!trueStatement);
+            if (listSize <= 3)
+            {
+                Console.WriteLine("Setting list size to default value of 3.");
+                listSize = 3;
+            }
+            Console.WriteLine($"List is {listSize} items long.");
+            return listSize;
+        }
+
+        //
+        //This will create the amount of time that people wish entered.
+        //
+        private static int SentryTimerSettings()
+        {
+            int sentrySec = 0;
+            Console.WriteLine("Please select the number of seconds you would like the sentry to be operational.");
+            int.TryParse(Console.ReadLine(), out sentrySec);
+            return sentrySec;
+        }
+
+
+        //
+        /// <summary>
+        /// this will create the frequency of the data taken.
+        /// </summary>
+        /// <returns>Sentry Frequency</returns>
+        private static int SentryDataTakenFrequencySettings()
+        {
+            int sentryFreq = 0;
+            Console.WriteLine("Please select the number of data points you would like the sentry to take!");
+            int.TryParse(Console.ReadLine(), out sentryFreq);
+            return sentryFreq;
+        }
+        #endregion
 
         private static void TestFinchConnection(Finch myFinch)
         {
@@ -294,6 +453,7 @@ namespace Finch_Starter
         }
         #endregion
 
+
         #region LIGHT DATA RECORDER
         private static void DisplayLightDataRecorder(Finch myFinch)
         {
@@ -306,7 +466,6 @@ namespace Finch_Starter
             leftLightData = null;
             rightLightData = null;
             averageLightData = null;
-
             do
             {
                 DisplayHeader("Data Recorder Menu");
@@ -424,7 +583,6 @@ namespace Finch_Starter
                 myFinch.wait(waitVariable);
             }
             Tuple<double[], double[]> lightReadingVarable = new Tuple<double[], double[]>(lightReadingLeft, lightReadingRight);
-
             return lightReadingVarable;
         }
 
@@ -692,7 +850,8 @@ namespace Finch_Starter
             Console.WriteLine("a. TALENT SHOW.");
             Console.WriteLine("b. Make Finch angry.");
             Console.WriteLine("c. Data Collection.");
-            Console.WriteLine("d. Light Data Collection.");
+            Console.WriteLine("d. Light Data Collection."); 
+            Console.WriteLine("e. Finch Sentry Mode.");
             Console.WriteLine("quit to quit.");
         }
         private static void DisplayTalentShow()
@@ -706,8 +865,17 @@ namespace Finch_Starter
             Console.WriteLine("d will get the finch to perform a lightshow.");
             Console.WriteLine("quit to quit.");
         }
-        #endregion
 
+        private static void DisplayAlarm()
+        {
+            DisplayHeader("Alarm Menu");
+            Console.WriteLine("a. set timer for amount of time.");
+            Console.WriteLine("b. Set frequency.");
+            Console.WriteLine("c. min/max values.");
+            Console.WriteLine("d. START");
+            Console.WriteLine("quit to quit");
+        }
+        #endregion
     }
 }
 
