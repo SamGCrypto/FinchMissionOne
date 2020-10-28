@@ -180,7 +180,7 @@ namespace Alarm_System
                         Console.WriteLine($"{userChoice} how long the list will be.");
                         break;
                     case "d":
-                        
+                        minMax = SentryAlarmAlert();
                         break;
                     case "e":
                         if (sentrySec <= 0 || sentryFrequency <= 0 || userChoice <= 0)
@@ -189,7 +189,7 @@ namespace Alarm_System
                         }
                         else
                         {
-                            (int[], int[])sensorData = ExecuteSentryMode(sentrySec, sentryFrequency, dataAmountSentryTakes, myFinch);
+                            (int[], int[])sensorData = ExecuteSentryMode(sentrySec, sentryFrequency, dataAmountSentryTakes, myFinch, minMax);
                         }
                         break;
                     case "quit":
@@ -203,7 +203,15 @@ namespace Alarm_System
             } while (sentryMode);
         }
 
-        private static (int[], int[]) ExecuteSentryMode(int sentrySec, int sentryFrequency, int[] dataAmountSentryTakes, Finch myFinch)
+        private static int SentryAlarmAlert()
+        {
+            int i;
+            Console.WriteLine("Enter in the alert range for the sensors.");
+            int.TryParse(Console.ReadLine(), out i);
+            return i;
+        }
+
+        private static (int[], int[]) ExecuteSentryMode(int sentrySec, int sentryFrequency, int[] dataAmountSentryTakes, Finch myFinch, int minMax)
         {
             bool finished = false;
             int[] dataAmountSentryTakesRight = new int[dataAmountSentryTakes.Length];
